@@ -76,15 +76,16 @@ const authenticate = async (username: string, password: string): Promise<string 
   }
 
   // Générer un token JWT
-  const token = jwt.sign(
-    { 
-      id: user.id,
-      username: user.username,
-      role: user.role
-    },
-    EXPRESS_CONFIG.jwtSecret,
-    { expiresIn: EXPRESS_CONFIG.jwtExpiration }
-  );
+  const payload = { 
+    id: user.id,
+    username: user.username,
+    role: user.role
+  };
+  
+  const secret = EXPRESS_CONFIG.jwtSecret;
+  const options = { expiresIn: EXPRESS_CONFIG.jwtExpiration };
+  
+  const token = jwt.sign(payload, secret, options);
 
   logger.info(`User ${username} authenticated successfully`);
   return token;

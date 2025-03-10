@@ -20,7 +20,7 @@ declare global {
 /**
  * Middleware pour vérifier si l'utilisateur est authentifié
  */
-const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
+const authenticateUser = (req: Request, res: Response, next: NextFunction): void => {
   try {
     // Récupérer le token d'authentification
     const authHeader = req.headers.authorization;
@@ -31,7 +31,8 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
         timestamp: new Date()
       };
       
-      return res.status(401).json(response);
+      res.status(401).json(response);
+      return;
     }
 
     // Extraire et vérifier le token
@@ -45,7 +46,8 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
         timestamp: new Date()
       };
       
-      return res.status(401).json(response);
+      res.status(401).json(response);
+      return;
     }
 
     // Ajouter l'utilisateur à la requête
@@ -72,7 +74,7 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
 /**
  * Middleware pour vérifier si l'utilisateur a le rôle admin
  */
-const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.user || req.user.role !== 'admin') {
     const response: ApiResponse<null> = {
       success: false,
@@ -80,7 +82,8 @@ const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
       timestamp: new Date()
     };
     
-    return res.status(403).json(response);
+    res.status(403).json(response);
+    return;
   }
   
   next();
