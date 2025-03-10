@@ -9,15 +9,37 @@ const router = Router();
 // Toutes les routes nécessitent une authentification
 
 // Routes nécessitant uniquement une authentification
-router.get('/', authenticateUser, connectionController.getAllConnections);
-router.get('/:id', authenticateUser, connectionController.getConnectionById);
-router.post('/:id/test', authenticateUser, connectionController.testConnection);
-router.get('/:id/stats', authenticateUser, connectionController.getConnectionStats);
-router.post('/:id/query', authenticateUser, connectionController.executeQuery);
+router.get('/', authenticateUser, (req, res) => {
+  return connectionController.getAllConnections(req, res);
+});
+
+router.get('/:id', authenticateUser, (req, res) => {
+  return connectionController.getConnectionById(req, res);
+});
+
+router.post('/:id/test', authenticateUser, (req, res) => {
+  return connectionController.testConnection(req, res);
+});
+
+router.get('/:id/stats', authenticateUser, (req, res) => {
+  return connectionController.getConnectionStats(req, res);
+});
+
+router.post('/:id/query', authenticateUser, (req, res) => {
+  return connectionController.executeQuery(req, res);
+});
 
 // Routes nécessitant des privilèges d'administrateur
-router.post('/', authenticateUser, requireAdmin, connectionController.createConnection);
-router.put('/:id', authenticateUser, requireAdmin, connectionController.updateConnection);
-router.delete('/:id', authenticateUser, requireAdmin, connectionController.deleteConnection);
+router.post('/', authenticateUser, requireAdmin, (req, res) => {
+  return connectionController.createConnection(req, res);
+});
+
+router.put('/:id', authenticateUser, requireAdmin, (req, res) => {
+  return connectionController.updateConnection(req, res);
+});
+
+router.delete('/:id', authenticateUser, requireAdmin, (req, res) => {
+  return connectionController.deleteConnection(req, res);
+});
 
 export default router;

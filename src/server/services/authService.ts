@@ -82,10 +82,11 @@ const authenticate = async (username: string, password: string): Promise<string 
     role: user.role
   };
   
-  const secret = EXPRESS_CONFIG.jwtSecret;
-  const options = { expiresIn: EXPRESS_CONFIG.jwtExpiration };
-  
-  const token = jwt.sign(payload, secret, options);
+  const token = jwt.sign(
+    payload, 
+    EXPRESS_CONFIG.jwtSecret as jwt.Secret, 
+    { expiresIn: EXPRESS_CONFIG.jwtExpiration }
+  );
 
   logger.info(`User ${username} authenticated successfully`);
   return token;
@@ -96,7 +97,7 @@ const authenticate = async (username: string, password: string): Promise<string 
  */
 const verifyToken = (token: string): any => {
   try {
-    return jwt.verify(token, EXPRESS_CONFIG.jwtSecret);
+    return jwt.verify(token, EXPRESS_CONFIG.jwtSecret as jwt.Secret);
   } catch (error) {
     logger.error(`Token verification failed: ${(error as Error).message}`);
     return null;
