@@ -8,7 +8,7 @@ import compression from 'compression';
 import authRoutes from './routes/authRoutes';
 import connectionRoutes from './routes/connectionRoutes';
 import errorHandler from './middlewares/errorHandler';
-import { ipRestriction } from './middlewares/ipRestriction';
+import ipRestriction from './middlewares/ipRestriction';
 import logger from './utils/logger';
 
 // Initialize Express application
@@ -22,8 +22,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// IP restriction middleware - fixed application
-app.use((req, res, next) => ipRestriction(req, res, next));
+// IP restriction middleware - Apply it correctly
+app.use(ipRestriction);
 
 // Routes
 app.use('/api/auth', authRoutes);
