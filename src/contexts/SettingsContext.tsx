@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface ValidationErrors {
   ipWhitelist?: string;
@@ -22,10 +23,11 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-export const SettingsProvider = ({ children, onSave }: { children: ReactNode, onSave?: (e: React.FormEvent) => void }) => {
+export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [ipWhitelist, setIpWhitelist] = useState('127.0.0.1,::1,localhost');
   const [isIpRestrictionEnabled, setIsIpRestrictionEnabled] = useState(true);
   const [errors, setErrors] = useState<ValidationErrors>({});
+  const { toast } = useToast();
 
   const validateIpWhitelist = (value: string): string | undefined => {
     if (!value.trim() && isIpRestrictionEnabled) {
@@ -71,9 +73,10 @@ export const SettingsProvider = ({ children, onSave }: { children: ReactNode, on
     e.preventDefault();
     
     if (validateForm()) {
-      if (onSave) {
-        onSave(e);
-      }
+      toast({
+        title: "Paramètres enregistrés",
+        description: "Vos paramètres ont été mis à jour",
+      });
     }
   };
 
