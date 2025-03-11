@@ -44,9 +44,8 @@ export const getLocalIps = (): string[] => {
     const iface = interfaces[ifName];
     if (iface) {
       for (const alias of iface) {
-        if (alias.family === 'IPv4' || alias.family === 4) {
-          ips.push(alias.address);
-        } else if (alias.family === 'IPv6' || alias.family === 6) {
+        // Fixed: Use correct type checking for family property
+        if (alias.family === 'IPv4' || alias.family === 'IPv6') {
           ips.push(alias.address);
         }
       }
