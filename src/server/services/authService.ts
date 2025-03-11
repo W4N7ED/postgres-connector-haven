@@ -2,7 +2,8 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { logger } from '../utils/logger';
+// Fix logger import
+import logger from '../utils/logger';
 
 // Configuration de sécurité
 const SECURITY_CONFIG = {
@@ -42,10 +43,11 @@ initAdminUser();
  * Générer un token JWT
  */
 const generateToken = (userId: string): string => {
-  // Fix JWT signing by properly handling the secret
+  // Fix JWT signing by properly typing the secret
+  const secret = SECURITY_CONFIG.jwtSecret as jwt.Secret;
   return jwt.sign(
     { id: userId }, 
-    SECURITY_CONFIG.jwtSecret,
+    secret,
     { expiresIn: SECURITY_CONFIG.jwtExpiresIn }
   );
 };
@@ -55,8 +57,9 @@ const generateToken = (userId: string): string => {
  */
 const verifyToken = (token: string): any => {
   try {
-    // Fix JWT verification by properly handling the secret
-    return jwt.verify(token, SECURITY_CONFIG.jwtSecret);
+    // Fix JWT verification by properly typing the secret
+    const secret = SECURITY_CONFIG.jwtSecret as jwt.Secret;
+    return jwt.verify(token, secret);
   } catch (error) {
     logger.error('Erreur lors de la vérification du token JWT:', error);
     return null;
@@ -90,6 +93,7 @@ const authenticateUser = async (username: string, password: string) => {
   };
 };
 
+// Export individual functions instead of default export
 export {
   authenticateUser,
   verifyToken,

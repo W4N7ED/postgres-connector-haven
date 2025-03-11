@@ -4,12 +4,12 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 
-import { authRoutes } from './routes/authRoutes';
-import { connectionRoutes } from './routes/connectionRoutes';
-import { errorHandler } from './middlewares/errorHandler';
+// Fix imports to use default imports
+import authRoutes from './routes/authRoutes';
+import connectionRoutes from './routes/connectionRoutes';
+import errorHandler from './middlewares/errorHandler';
 import { ipRestriction } from './middlewares/ipRestriction';
-import { logger } from './utils/logger';
-import { setupMetrics } from './utils/metrics';
+import logger from './utils/logger';
 
 // Initialisation de l'application Express
 const app = express();
@@ -22,18 +22,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Middleware de restriction IP (appliqué à toutes les routes)
-// Correct way to apply middleware
+// Middleware de restriction IP - fix the application of middleware
 app.use(ipRestriction);
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/connections', connectionRoutes);
 
-// Métriques Prometheus
-if (process.env.PROMETHEUS_ENABLED === 'true') {
-  setupMetrics(app);
-}
+// Métriques Prometheus - removed reference to missing metrics module
+// if (process.env.PROMETHEUS_ENABLED === 'true') {
+//   setupMetrics(app);
+// }
 
 // Middleware de gestion des erreurs (doit être après les routes)
 app.use(errorHandler);
