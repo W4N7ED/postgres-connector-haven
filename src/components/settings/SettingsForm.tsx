@@ -10,10 +10,17 @@ import SecuritySettings from './SecuritySettings';
 import MaintenanceSettings from './MaintenanceSettings';
 
 const SettingsForm = () => {
-  const { handleSave } = useSettings();
+  const { handleSave, validateForm } = useSettings();
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      handleSave(e);
+    }
+  };
 
   return (
-    <form onSubmit={handleSave}>
+    <form onSubmit={onSubmit}>
       <AccessRestrictions />
       
       <Separator className="my-6" />

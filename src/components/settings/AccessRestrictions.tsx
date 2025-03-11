@@ -11,7 +11,8 @@ const AccessRestrictions = () => {
     ipWhitelist, 
     setIpWhitelist, 
     isIpRestrictionEnabled, 
-    setIsIpRestrictionEnabled 
+    setIsIpRestrictionEnabled,
+    errors
   } = useSettings();
 
   return (
@@ -41,8 +42,13 @@ const AccessRestrictions = () => {
               placeholder="127.0.0.1,::1,localhost" 
               value={ipWhitelist}
               onChange={(e) => setIpWhitelist(e.target.value)}
-              className="h-24"
+              className={`h-24 ${errors.ipWhitelist ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
             />
+            {errors.ipWhitelist && (
+              <p className="text-sm text-red-500 mt-1">
+                {errors.ipWhitelist}
+              </p>
+            )}
             <p className="text-sm text-muted-foreground">
               Entrez les adresses IP ou noms d'hôtes autorisés à se connecter à votre serveur. 
               Utilisez des virgules pour séparer les entrées.

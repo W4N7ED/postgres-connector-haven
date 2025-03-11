@@ -17,31 +17,23 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware de restriction IP (doit être avant les autres middlewares)
-// Fix: Use the middleware properly as an Express middleware function
-app.use(ipRestriction);
+// Fix: We need to use app.use with a path pattern to correctly apply the middleware
+app.use('/', ipRestriction);
 
 // Middlewares de base
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
 app.use(helmet());
 app.use(compression());
-app.use(express.json({ limit: process.env.BODY_LIMIT || '1mb' }));
+app.use(cors());
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/connections', connectionRoutes);
 
-// Route de base
+// Route de base pour vérifier que le serveur fonctionne
 app.get('/', (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    message: 'API PostgreSQL Manager',
-    timestamp: new Date()
-  });
+  res.send('API PostgreSQL Manager - Serveur en ligne');
 });
 
 // Middleware de gestion des erreurs
@@ -50,14 +42,6 @@ app.use(errorHandler);
 // Démarrer le serveur
 app.listen(PORT, () => {
   logger.info(`Serveur démarré sur le port ${PORT}`);
-  
-  // Afficher les informations sur la restriction IP
-  const ipWhitelist = process.env.IP_WHITELIST;
-  if (ipWhitelist) {
-    logger.info(`Restriction IP activée avec les adresses autorisées: ${ipWhitelist}`);
-  } else {
-    logger.info('Restriction IP désactivée. Toutes les adresses IP sont autorisées.');
-  }
 });
 
 export default app;

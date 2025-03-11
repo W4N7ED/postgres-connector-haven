@@ -1,20 +1,34 @@
 
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import jwt, { Secret, JwtPayload, SignOptions } from 'jsonwebtoken';
-import { SECURITY_CONFIG, EXPRESS_CONFIG } from '../config';
+import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
 
-// Interface pour les utilisateurs
+// Configuration de sécurité
+const SECURITY_CONFIG = {
+  // Ces valeurs devraient être chargées depuis des variables d'environnement dans un environnement de production
+  jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
+  jwtExpiresIn: '24h',
+  bcryptSaltRounds: process.env.BCRYPT_SALT_ROUNDS || 10,
+};
+
+// Type pour représenter un utilisateur
 interface User {
   id: string;
   username: string;
   password: string;
-  role: string;
+  email: string;
 }
 
-// Simuler une BD utilisateurs pour le moment
-// Dans une application réelle, cela serait stocké dans PostgreSQL
-const users: Map<string, User> = new Map();
+// Utilisateurs fictifs pour la démonstration
+const users: User[] = [
+  {
+    id: '1',
+    username: 'admin',
+    password: '$2b$10$AkPXa0.7J.1jZ1MxzCH.4OL9BJ5SSAXZCulI8pUO4X0wPjjZRTTIa', // "password"
+    email: 'admin@example.com',
+  },
+];
 
 /**
  * Hasher un mot de passe
@@ -29,127 +43,84 @@ const hashPassword = async (password: string): Promise<string> => {
 };
 
 /**
- * Créer un utilisateur
+ * Comparer un mot de passe avec un hash
  */
-const createUser = async (username: string, password: string, role: string = 'user'): Promise<User> => {
-  // Vérifier si l'utilisateur existe déjà
-  const existingUserIds = Array.from(users.values())
-    .filter(u => u.username === username)
-    .map(u => u.id);
-  
-  if (existingUserIds.length > 0) {
-    throw new Error(`User with username ${username} already exists`);
-  }
-
-  // Créer le nouvel utilisateur
-  const hashedPassword = await hashPassword(password);
-  const userId = Date.now().toString(36) + Math.random().toString(36).substring(2);
-  
-  const newUser: User = {
-    id: userId,
-    username,
-    password: hashedPassword,
-    role
-  };
-
-  users.set(userId, newUser);
-  logger.info(`User created: ${username}`, { userId });
-  
-  // Ne pas retourner le mot de passe
-  const { password: _, ...userWithoutPassword } = newUser;
-  return { ...userWithoutPassword, password: '[REDACTED]' };
+const comparePassword = async (password: string, hashedPassword: string): Promise<boolean> => {
+  return bcrypt.compare(password, hashedPassword);
 };
 
 /**
- * Authentifier un utilisateur
+ * Générer un token JWT
  */
-const authenticate = async (username: string, password: string): Promise<string | null> => {
-  // Trouver l'utilisateur par nom d'utilisateur
-  const user = Array.from(users.values()).find(u => u.username === username);
-  
-  if (!user) {
-    logger.warn(`Authentication failed: User ${username} not found`);
-    return null;
-  }
-
-  // Vérifier le mot de passe
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-  
-  if (!isPasswordValid) {
-    logger.warn(`Authentication failed: Invalid password for user ${username}`);
-    return null;
-  }
-
-  // Générer un token JWT
-  const payload = { 
-    id: user.id,
-    username: user.username,
-    role: user.role
-  };
-  
-  // Conversion explicite du type secret et options pour JWT
-  const jwtSecret = EXPRESS_CONFIG.jwtSecret as Secret;
-  const options: SignOptions = { 
-    expiresIn: EXPRESS_CONFIG.jwtExpiration 
-  };
-  
-  const token = jwt.sign(payload, jwtSecret, options);
-
-  logger.info(`User ${username} authenticated successfully`);
-  return token;
+const generateToken = (userId: string): string => {
+  return jwt.sign({ id: userId }, SECURITY_CONFIG.jwtSecret, {
+    expiresIn: SECURITY_CONFIG.jwtExpiresIn,
+  });
 };
 
 /**
  * Vérifier un token JWT
  */
-const verifyToken = (token: string): JwtPayload | null => {
+const verifyToken = (token: string): any => {
   try {
-    const jwtSecret = EXPRESS_CONFIG.jwtSecret as Secret;
-    return jwt.verify(token, jwtSecret) as JwtPayload;
+    return jwt.verify(token, SECURITY_CONFIG.jwtSecret);
   } catch (error) {
-    logger.error(`Token verification failed: ${(error as Error).message}`);
+    logger.error('Erreur lors de la vérification du token JWT:', error);
     return null;
   }
 };
 
 /**
- * Obtenir un utilisateur par son ID
+ * Authentifier un utilisateur avec username/password
  */
-const getUserById = (userId: string): Omit<User, 'password'> | null => {
-  const user = users.get(userId);
+const authenticate = async (username: string, password: string): Promise<{ user: Omit<User, 'password'>, token: string } | null> => {
+  const user = users.find((u) => u.username === username);
   
   if (!user) {
     return null;
   }
+  
+  const isPasswordValid = await comparePassword(password, user.password);
+  
+  if (!isPasswordValid) {
+    return null;
+  }
+  
+  const token = generateToken(user.id);
+  
+  const { password: _, ...userWithoutPassword } = user;
+  
+  return {
+    user: userWithoutPassword,
+    token,
+  };
+};
 
-  // Ne pas retourner le mot de passe
-  const { password, ...userWithoutPassword } = user;
+/**
+ * Création d'un nouvel utilisateur
+ */
+const createUser = async (username: string, password: string, email: string): Promise<Omit<User, 'password'>> => {
+  const hashedPassword = await hashPassword(password);
+  
+  const newUser: User = {
+    id: uuidv4(),
+    username,
+    password: hashedPassword,
+    email,
+  };
+  
+  users.push(newUser);
+  
+  const { password: _, ...userWithoutPassword } = newUser;
+  
   return userWithoutPassword;
 };
 
-// Créer un utilisateur administrateur par défaut pour le développement
-const initAdminUser = async () => {
-  try {
-    // Vérifier si un administrateur existe déjà
-    const adminExists = Array.from(users.values()).some(u => u.role === 'admin');
-    
-    if (!adminExists) {
-      await createUser(
-        process.env.ADMIN_USERNAME || 'admin',
-        process.env.ADMIN_PASSWORD || 'admin123',
-        'admin'
-      );
-      logger.info('Default admin user created');
-    }
-  } catch (error) {
-    logger.error(`Failed to create admin user: ${(error as Error).message}`);
-  }
+export default {
+  authenticate,
+  createUser,
+  verifyToken,
+  hashPassword,
+  comparePassword,
 };
 
-export default {
-  createUser,
-  authenticate,
-  verifyToken,
-  getUserById,
-  initAdminUser
-};
