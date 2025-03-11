@@ -9,7 +9,7 @@ const SECURITY_CONFIG = {
   // Ces valeurs devraient être chargées depuis des variables d'environnement dans un environnement de production
   jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
   jwtExpiresIn: '24h',
-  bcryptSaltRounds: process.env.BCRYPT_SALT_ROUNDS || 10,
+  bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10),
 };
 
 // Type pour représenter un utilisateur
@@ -34,12 +34,7 @@ const users: User[] = [
  * Hasher un mot de passe
  */
 const hashPassword = async (password: string): Promise<string> => {
-  // Fix: Convert salt rounds to a number to match bcrypt's expected type
-  const saltRounds = typeof SECURITY_CONFIG.bcryptSaltRounds === 'string' 
-    ? parseInt(SECURITY_CONFIG.bcryptSaltRounds, 10) 
-    : SECURITY_CONFIG.bcryptSaltRounds;
-    
-  return bcrypt.hash(password, saltRounds);
+  return bcrypt.hash(password, SECURITY_CONFIG.bcryptSaltRounds);
 };
 
 /**
@@ -53,9 +48,11 @@ const comparePassword = async (password: string, hashedPassword: string): Promis
  * Générer un token JWT
  */
 const generateToken = (userId: string): string => {
-  return jwt.sign({ id: userId }, SECURITY_CONFIG.jwtSecret, {
-    expiresIn: SECURITY_CONFIG.jwtExpiresIn,
-  });
+  return jwt.sign(
+    { id: userId }, 
+    SECURITY_CONFIG.jwtSecret as string, 
+    { expiresIn: SECURITY_CONFIG.jwtExpiresIn }
+  );
 };
 
 /**
@@ -63,7 +60,7 @@ const generateToken = (userId: string): string => {
  */
 const verifyToken = (token: string): any => {
   try {
-    return jwt.verify(token, SECURITY_CONFIG.jwtSecret);
+    return jwt.verify(token, SECURITY_CONFIG.jwtSecret as string);
   } catch (error) {
     logger.error('Erreur lors de la vérification du token JWT:', error);
     return null;
@@ -123,4 +120,3 @@ export default {
   hashPassword,
   comparePassword,
 };
-

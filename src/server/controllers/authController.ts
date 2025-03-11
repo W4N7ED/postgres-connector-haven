@@ -9,7 +9,7 @@ import { ApiResponse } from '@/types/connection';
  */
 const register = async (req: Request, res: Response) => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password, email } = req.body;
     
     if (!username || !password) {
       const response: ApiResponse<null> = {
@@ -22,12 +22,7 @@ const register = async (req: Request, res: Response) => {
     }
 
     // Dans un environnement de production, le rôle devrait être restreint
-    // Seul un admin devrait pouvoir créer d'autres admins
-    const userRole = role === 'admin' 
-      ? (req.user?.role === 'admin' ? 'admin' : 'user') 
-      : (role || 'user');
-
-    const user = await authService.createUser(username, password, userRole);
+    const user = await authService.createUser(username, password, email);
 
     const response: ApiResponse<typeof user> = {
       success: true,
@@ -66,9 +61,9 @@ const login = async (req: Request, res: Response) => {
       return res.status(400).json(response);
     }
 
-    const token = await authService.authenticate(username, password);
+    const authResult = await authService.authenticate(username, password);
     
-    if (!token) {
+    if (!authResult) {
       const response: ApiResponse<null> = {
         success: false,
         error: 'Invalid credentials',
@@ -78,9 +73,12 @@ const login = async (req: Request, res: Response) => {
       return res.status(401).json(response);
     }
 
-    const response: ApiResponse<{ token: string }> = {
+    const response: ApiResponse<{ token: string; user: object }> = {
       success: true,
-      data: { token },
+      data: { 
+        token: authResult.token,
+        user: authResult.user
+      },
       timestamp: new Date()
     };
 
