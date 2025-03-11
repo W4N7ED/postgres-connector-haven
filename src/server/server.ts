@@ -1,5 +1,5 @@
 
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -8,7 +8,7 @@ import authRoutes from './routes/authRoutes';
 import connectionRoutes from './routes/connectionRoutes';
 import errorHandler from './middlewares/errorHandler';
 import logger from './utils/logger';
-import ipRestriction from './middlewares/ipRestriction'; // Importer le middleware de restriction IP
+import ipRestriction from './middlewares/ipRestriction';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -17,6 +17,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware de restriction IP (doit être avant les autres middlewares)
+// Fix: Use the middleware properly as an Express middleware function
 app.use(ipRestriction);
 
 // Middlewares de base

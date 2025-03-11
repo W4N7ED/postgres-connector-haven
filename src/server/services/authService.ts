@@ -20,7 +20,12 @@ const users: Map<string, User> = new Map();
  * Hasher un mot de passe
  */
 const hashPassword = async (password: string): Promise<string> => {
-  return bcrypt.hash(password, SECURITY_CONFIG.bcryptSaltRounds);
+  // Fix: Convert salt rounds to a number to match bcrypt's expected type
+  const saltRounds = typeof SECURITY_CONFIG.bcryptSaltRounds === 'string' 
+    ? parseInt(SECURITY_CONFIG.bcryptSaltRounds, 10) 
+    : SECURITY_CONFIG.bcryptSaltRounds;
+    
+  return bcrypt.hash(password, saltRounds);
 };
 
 /**
