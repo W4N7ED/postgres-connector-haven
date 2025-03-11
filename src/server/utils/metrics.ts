@@ -1,15 +1,27 @@
 
-import { Application } from 'express';
+import { Express } from 'express';
+import { register, collectDefaultMetrics } from 'prom-client';
+import logger from './logger';
+
+// Initialize default metrics
+collectDefaultMetrics({ register });
 
 /**
- * Setup for Prometheus metrics collection
- * This is a placeholder implementation
+ * Setup Prometheus metrics
  */
-export const setupMetrics = (app: Application) => {
-  // Setup a basic metrics endpoint
-  app.get('/metrics', (req, res) => {
-    // In a real implementation, this would use the prom-client package
-    // to collect and return metrics in the Prometheus format
-    res.send('# This is a placeholder for Prometheus metrics');
+export const setupMetrics = (app: Express) => {
+  const metricsPath = process.env.PROMETHEUS_PATH || '/metrics';
+  
+  // Expose metrics endpoint
+  app.get(metricsPath, async (req, res) => {
+    try {
+      res.set('Content-Type', register.contentType);
+      res.end(await register.metrics());
+    } catch (error) {
+      logger.error('Error generating metrics:', error);
+      res.status(500).send('Error generating metrics');
+    }
   });
+  
+  logger.info(`Prometheus metrics enabled at ${metricsPath}`);
 };

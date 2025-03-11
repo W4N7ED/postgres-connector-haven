@@ -5,25 +5,25 @@ import { v4 as uuidv4 } from 'uuid';
 // Fix logger import
 import logger from '../utils/logger';
 
-// Configuration de sécurité
+// Security configuration
 const SECURITY_CONFIG = {
   bcryptSaltRounds: process.env.BCRYPT_SALT_ROUNDS ? parseInt(process.env.BCRYPT_SALT_ROUNDS) : 10,
   jwtSecret: process.env.JWT_SECRET || 'default_secret_key_change_in_production',
   jwtExpiresIn: process.env.JWT_EXPIRATION || '24h'
 };
 
-// Simulation d'une base d'utilisateurs pour le développement
-// En production, cela serait remplacé par une vraie base de données
+// User store simulation for development
+// In production, this would be replaced with a real database
 let users = [
-  // L'utilisateur administrateur est créé au démarrage du serveur
+  // Admin user is created at server startup
 ];
 
-// Initialisation de l'utilisateur admin à partir des variables d'environnement
+// Initialize admin user from environment variables
 const initAdminUser = () => {
   const adminUsername = process.env.ADMIN_USERNAME || 'admin';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
   
-  // Vérifie si l'utilisateur admin existe déjà
+  // Check if admin user already exists
   if (!users.find(user => user.username === adminUsername)) {
     const hashedPassword = bcrypt.hashSync(adminPassword, SECURITY_CONFIG.bcryptSaltRounds);
     users.push({
@@ -32,59 +32,60 @@ const initAdminUser = () => {
       password: hashedPassword,
       isAdmin: true
     });
-    logger.info(`Utilisateur admin "${adminUsername}" initialisé`);
+    logger.info(`Admin user "${adminUsername}" initialized`);
   }
 };
 
-// Appel de l'initialisation au démarrage
+// Call initialization at startup
 initAdminUser();
 
 /**
- * Générer un token JWT
+ * Generate a JWT token
  */
 const generateToken = (userId: string): string => {
-  // Fix JWT signing by properly typing the secret
-  const secret = SECURITY_CONFIG.jwtSecret as jwt.Secret;
+  // Fix JWT signing by creating a proper secret key
+  const secretKey = SECURITY_CONFIG.jwtSecret;
+  
   return jwt.sign(
     { id: userId }, 
-    secret,
+    secretKey,
     { expiresIn: SECURITY_CONFIG.jwtExpiresIn }
   );
 };
 
 /**
- * Vérifier un token JWT
+ * Verify a JWT token
  */
 const verifyToken = (token: string): any => {
   try {
-    // Fix JWT verification by properly typing the secret
-    const secret = SECURITY_CONFIG.jwtSecret as jwt.Secret;
-    return jwt.verify(token, secret);
+    // Fix JWT verification by using the same secret key
+    const secretKey = SECURITY_CONFIG.jwtSecret;
+    return jwt.verify(token, secretKey);
   } catch (error) {
-    logger.error('Erreur lors de la vérification du token JWT:', error);
+    logger.error('Error verifying JWT token:', error);
     return null;
   }
 };
 
 /**
- * Authentifier un utilisateur
+ * Authenticate a user
  */
 const authenticateUser = async (username: string, password: string) => {
   const user = users.find(u => u.username === username);
   
   if (!user) {
-    logger.warn(`Tentative de connexion avec un utilisateur inexistant: ${username}`);
+    logger.warn(`Login attempt with non-existent user: ${username}`);
     return null;
   }
   
   const passwordMatch = await bcrypt.compare(password, user.password);
   
   if (!passwordMatch) {
-    logger.warn(`Échec d'authentification pour l'utilisateur: ${username}`);
+    logger.warn(`Authentication failed for user: ${username}`);
     return null;
   }
   
-  logger.info(`Utilisateur authentifié avec succès: ${username}`);
+  logger.info(`User authenticated successfully: ${username}`);
   return {
     id: user.id,
     username: user.username,
@@ -93,7 +94,7 @@ const authenticateUser = async (username: string, password: string) => {
   };
 };
 
-// Export individual functions instead of default export
+// Export individual functions
 export {
   authenticateUser,
   verifyToken,
