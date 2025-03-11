@@ -1,6 +1,6 @@
 
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { Secret, JwtPayload, SignOptions } from 'jsonwebtoken';
 import { SECURITY_CONFIG, EXPRESS_CONFIG } from '../config';
 import logger from '../utils/logger';
 
@@ -83,8 +83,10 @@ const authenticate = async (username: string, password: string): Promise<string 
   };
   
   // Conversion explicite du type secret et options pour JWT
-  const jwtSecret = EXPRESS_CONFIG.jwtSecret as string;
-  const options = { expiresIn: EXPRESS_CONFIG.jwtExpiration };
+  const jwtSecret = EXPRESS_CONFIG.jwtSecret as Secret;
+  const options: SignOptions = { 
+    expiresIn: EXPRESS_CONFIG.jwtExpiration 
+  };
   
   const token = jwt.sign(payload, jwtSecret, options);
 
@@ -95,10 +97,10 @@ const authenticate = async (username: string, password: string): Promise<string 
 /**
  * Vérifier un token JWT
  */
-const verifyToken = (token: string): any => {
+const verifyToken = (token: string): JwtPayload | null => {
   try {
-    const jwtSecret = EXPRESS_CONFIG.jwtSecret as string;
-    return jwt.verify(token, jwtSecret);
+    const jwtSecret = EXPRESS_CONFIG.jwtSecret as Secret;
+    return jwt.verify(token, jwtSecret) as JwtPayload;
   } catch (error) {
     logger.error(`Token verification failed: ${(error as Error).message}`);
     return null;
