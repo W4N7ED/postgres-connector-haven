@@ -17,8 +17,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware de restriction IP (doit être avant les autres middlewares)
-// Fix: Correctly apply the middleware to the path
-app.use('*', ipRestriction);
+// Fix: Apply the middleware correctly to all routes, not as an application
+app.use(ipRestriction);
 
 // Middlewares de base
 app.use(helmet());
