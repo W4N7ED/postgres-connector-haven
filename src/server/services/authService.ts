@@ -43,9 +43,12 @@ initAdminUser();
  * Generate a JWT token
  */
 const generateToken = (userId: string): string => {
+  // Cast the secret to the proper type expected by jwt.sign
+  const secret: jwt.Secret = SECURITY_CONFIG.jwtSecret;
+  
   return jwt.sign(
     { id: userId }, 
-    SECURITY_CONFIG.jwtSecret,
+    secret,
     { expiresIn: SECURITY_CONFIG.jwtExpiresIn }
   );
 };
@@ -55,7 +58,9 @@ const generateToken = (userId: string): string => {
  */
 const verifyToken = (token: string): any => {
   try {
-    return jwt.verify(token, SECURITY_CONFIG.jwtSecret);
+    // Cast the secret to the proper type expected by jwt.verify
+    const secret: jwt.Secret = SECURITY_CONFIG.jwtSecret;
+    return jwt.verify(token, secret);
   } catch (error) {
     logger.error('Error verifying JWT token:', error);
     return null;

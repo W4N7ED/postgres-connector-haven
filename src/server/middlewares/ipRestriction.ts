@@ -58,7 +58,7 @@ export const getLocalIps = (): string[] => {
 /**
  * Middleware pour restreindre l'accès basé sur l'adresse IP
  */
-export const ipRestriction = (req: Request, res: Response, next: NextFunction) => {
+const ipRestriction = (req: Request, res: Response, next: NextFunction) => {
   // Si aucune liste blanche n'est définie, on autorise toutes les connexions
   const ipWhitelist = process.env.IP_WHITELIST;
   if (!ipWhitelist) {

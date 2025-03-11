@@ -10,6 +10,7 @@ import connectionRoutes from './routes/connectionRoutes';
 import errorHandler from './middlewares/errorHandler';
 import ipRestriction from './middlewares/ipRestriction';
 import logger from './utils/logger';
+import { setupMetrics } from './utils/metrics';
 
 // Initialize Express application
 const app = express();
@@ -29,10 +30,10 @@ app.use(ipRestriction);
 app.use('/api/auth', authRoutes);
 app.use('/api/connections', connectionRoutes);
 
-// Prometheus metrics - commented out since metrics module is missing
-// if (process.env.PROMETHEUS_ENABLED === 'true') {
-//   setupMetrics(app);
-// }
+// Prometheus metrics - uncomment when metrics module is available
+if (process.env.PROMETHEUS_ENABLED === 'true') {
+  setupMetrics(app);
+}
 
 // Error handling middleware (must be after routes)
 app.use(errorHandler);
