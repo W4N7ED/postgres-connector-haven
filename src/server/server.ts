@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -15,6 +14,7 @@ import logger from './utils/logger';
 import errorHandler from './middlewares/errorHandler';
 import authService from './services/authService';
 import connectionService from './services/connectionService';
+import ipRestriction from './middlewares/ipRestriction';
 
 // Créer l'application Express
 const app: Express = express();
@@ -27,6 +27,9 @@ app.use(cors({
 app.use(express.json({ limit: EXPRESS_CONFIG.bodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: EXPRESS_CONFIG.bodyLimit }));
 app.use(compression());
+
+// IP restriction middleware - apply to all routes
+app.use(ipRestriction);
 
 // Sécurité
 app.use(helmet());
