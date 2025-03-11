@@ -1,7 +1,6 @@
 
 import { Request, Response, NextFunction } from 'express';
-// Fix import to use named imports instead of default
-import { verifyToken } from '../services/authService';
+import authService from '../services/authService';
 import logger from '../utils/logger';
 import { ApiResponse } from '@/types/connection';
 
@@ -38,7 +37,7 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction): void
 
     // Extraire et vérifier le token
     const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
+    const decoded = authService.verifyToken(token);
     
     if (!decoded) {
       const response: ApiResponse<null> = {

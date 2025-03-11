@@ -1,7 +1,6 @@
 
 import { Request, Response } from 'express';
-// Fix import to use named imports instead of default
-import { authenticateUser } from '../services/authService';
+import authService from '../services/authService';
 import logger from '../utils/logger';
 import { ApiResponse } from '@/types/connection';
 
@@ -10,7 +9,7 @@ import { ApiResponse } from '@/types/connection';
  */
 const register = async (req: Request, res: Response) => {
   try {
-    const { username, password, email } = req.body;
+    const { username, password, role } = req.body;
     
     if (!username || !password) {
       const response: ApiResponse<null> = {
@@ -23,9 +22,12 @@ const register = async (req: Request, res: Response) => {
     }
 
     // Dans un environnement de production, le rôle devrait être restreint
-    // This section would call authService.createUser, which doesn't exist yet
-    // For now, return a placeholder response
-    const user = { username, email }; // Placeholder
+    // Seul un admin devrait pouvoir créer d'autres admins
+    const userRole = role === 'admin' 
+      ? (req.user?.role === 'admin' ? 'admin' : 'user') 
+      : (role || 'user');
+
+    const user = await authService.createUser(username, password, userRole);
 
     const response: ApiResponse<typeof user> = {
       success: true,
@@ -64,9 +66,9 @@ const login = async (req: Request, res: Response) => {
       return res.status(400).json(response);
     }
 
-    const authResult = await authenticateUser(username, password);
+    const token = await authService.authenticate(username, password);
     
-    if (!authResult) {
+    if (!token) {
       const response: ApiResponse<null> = {
         success: false,
         error: 'Invalid credentials',
@@ -76,16 +78,9 @@ const login = async (req: Request, res: Response) => {
       return res.status(401).json(response);
     }
 
-    const response: ApiResponse<{ token: string; user: object }> = {
+    const response: ApiResponse<{ token: string }> = {
       success: true,
-      data: { 
-        token: authResult.token,
-        user: {
-          id: authResult.id,
-          username: authResult.username,
-          isAdmin: authResult.isAdmin
-        }
-      },
+      data: { token },
       timestamp: new Date()
     };
 
