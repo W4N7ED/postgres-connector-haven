@@ -1,7 +1,7 @@
 
-# Procédure d'installation pour la gestion d'API PostgreSQL Manager
+# Procédure d'installation manuelle pour PostgreSQL Manager
 
-Cette documentation détaille les étapes nécessaires pour installer et configurer l'API PostgreSQL Manager sur un serveur.
+Cette documentation détaille les étapes nécessaires pour installer et configurer manuellement l'API PostgreSQL Manager sur un serveur, sans utiliser de scripts d'installation automatisés.
 
 ## Prérequis
 
@@ -21,23 +21,63 @@ sudo apt update && sudo apt upgrade -y
 
 # Installer les dépendances nécessaires
 sudo apt install -y curl git build-essential nginx
+```
 
-# Installer Node.js via NVM (recommandé pour une meilleure gestion des versions)
+### 2. Installation de Node.js
+
+```bash
+# Option 1: Installer Node.js via NVM (recommandé)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
 source ~/.bashrc
 nvm install 16
 nvm use 16
 
+# Option 2: Installer Node.js via apt
+curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+sudo apt install -y nodejs
+
 # Vérifier l'installation
-node -v
-npm -v
+node -v  # Doit afficher v16.x.x
+npm -v   # Doit afficher 8.x.x
 ```
 
-### 2. Installation de l'application
+### 3. Installation de PostgreSQL (si non installé)
 
 ```bash
-# Cloner le repository (remplacer par votre URL de repository)
-git clone https://github.com/votre-repo/postgres-manager.git
+# Ajouter le dépôt PostgreSQL
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt update
+
+# Installer PostgreSQL
+sudo apt install -y postgresql-12 postgresql-contrib-12
+
+# Démarrer et activer PostgreSQL
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# Vérifier l'installation
+sudo -u postgres psql -c "SELECT version();"
+```
+
+### 4. Configuration de PostgreSQL
+
+```bash
+# Se connecter à PostgreSQL
+sudo -u postgres psql
+
+# Dans l'invite PostgreSQL, exécuter:
+CREATE USER postgres_user WITH PASSWORD 'postgres_password_securise';
+CREATE DATABASE postgres_manager;
+GRANT ALL PRIVILEGES ON DATABASE postgres_manager TO postgres_user;
+\q
+```
+
+### 5. Installation de l'application
+
+```bash
+# Cloner le dépôt (remplacer par votre URL de dépôt)
+git clone https://github.com/votre-organisation/postgres-manager.git
 cd postgres-manager
 
 # Installer les dépendances
@@ -47,10 +87,10 @@ npm ci
 npm run build
 ```
 
-### 3. Configuration
+### 6. Configuration de l'application
 
 ```bash
-# Copier et modifier le fichier .env
+# Créer et configurer le fichier .env
 cp .env.example .env
 nano .env
 ```
@@ -74,8 +114,8 @@ POSTGRES_PORT=5432
 POSTGRES_DB=postgres_manager
 POSTGRES_USER=postgres_user
 POSTGRES_PASSWORD=postgres_password_securise
-POSTGRES_SSL=true
-POSTGRES_REJECT_UNAUTHORIZED=true
+POSTGRES_SSL=false
+POSTGRES_REJECT_UNAUTHORIZED=false
 
 # Sécurité
 BCRYPT_SALT_ROUNDS=12
@@ -84,59 +124,67 @@ RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=50
 CONTENT_SECURITY_POLICY=true
 
-# Admin (changez ces informations pour la production)
+# Admin (à modifier pour la production)
 ADMIN_USERNAME=admin_securise
 ADMIN_PASSWORD=admin_password_complexe
 ```
 
-### 4. Création du service systemd
-
-Créez un fichier de service systemd pour gérer le démarrage automatique:
+### 7. Création du service systemd
 
 ```bash
+# Créer un fichier de service systemd
 sudo nano /etc/systemd/system/postgres-manager.service
 ```
 
-Contenu du fichier:
+Contenu du fichier service:
 
-```
+```ini
 [Unit]
 Description=PostgreSQL Manager API Service
-After=network.target
+After=network.target postgresql.service
 
 [Service]
 Type=simple
 User=votre_utilisateur
 WorkingDirectory=/chemin/complet/vers/postgres-manager
-ExecStart=/home/votre_utilisateur/.nvm/versions/node/v16.x.x/bin/node dist/server.js
+ExecStart=/usr/bin/node dist/server.js
 Restart=on-failure
 Environment=NODE_ENV=production
+Environment=PORT=3001
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Activez et démarrez le service:
+### 8. Activation et démarrage du service
 
 ```bash
+# Recharger systemd
 sudo systemctl daemon-reload
+
+# Activer le service
 sudo systemctl enable postgres-manager
+
+# Démarrer le service
 sudo systemctl start postgres-manager
+
+# Vérifier l'état du service
 sudo systemctl status postgres-manager
 ```
 
-### 5. Configuration de Nginx comme proxy inverse
+### 9. Configuration de Nginx comme proxy inverse
 
 ```bash
+# Créer un fichier de configuration Nginx
 sudo nano /etc/nginx/sites-available/postgres-manager
 ```
 
-Contenu du fichier:
+Contenu du fichier de configuration Nginx:
 
-```
+```nginx
 server {
     listen 80;
-    server_name votre-api.domaine.com;
+    server_name api.votre-domaine.com;
 
     location / {
         proxy_pass http://localhost:3001;
@@ -152,56 +200,104 @@ server {
 }
 ```
 
-Activer le site et redémarrer Nginx:
+### 10. Activation de la configuration Nginx
 
 ```bash
+# Activer le site
 sudo ln -s /etc/nginx/sites-available/postgres-manager /etc/nginx/sites-enabled/
+
+# Vérifier la configuration
 sudo nginx -t
+
+# Redémarrer Nginx
 sudo systemctl restart nginx
 ```
 
-### 6. Configuration SSL avec Certbot
+### 11. Configuration SSL (recommandé pour la production)
 
 ```bash
+# Installer Certbot
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d votre-api.domaine.com
+
+# Obtenir un certificat SSL
+sudo certbot --nginx -d api.votre-domaine.com
+
+# Suivre les instructions à l'écran pour terminer la configuration
 ```
 
-### 7. Finalisation
+## Vérification de l'installation
 
-Vérifiez que tout fonctionne en accédant à `https://votre-api.domaine.com` dans votre navigateur.
+Accédez à `https://api.votre-domaine.com` dans votre navigateur. Vous devriez voir un message indiquant que le serveur est en ligne.
 
-## Configuration des restrictions IP
+## Dépannage
 
-Pour limiter l'accès à l'API à certaines adresses IP:
+### Problèmes de connexion à PostgreSQL
 
-1. Modifiez la variable `IP_WHITELIST` dans le fichier `.env` avec les adresses IP autorisées, séparées par des virgules
-2. Redémarrez le service: `sudo systemctl restart postgres-manager`
+1. Vérifier que PostgreSQL est en cours d'exécution:
+   ```bash
+   sudo systemctl status postgresql
+   ```
 
-## Mise à jour de l'application
+2. Vérifier les paramètres de connexion dans `.env`
+
+3. Vérifier les logs PostgreSQL:
+   ```bash
+   sudo tail -f /var/log/postgresql/postgresql-12-main.log
+   ```
+
+### Problèmes avec le service
+
+1. Vérifier les logs du service:
+   ```bash
+   sudo journalctl -u postgres-manager -f
+   ```
+
+2. Vérifier que les ports sont correctement configurés et non bloqués:
+   ```bash
+   sudo ss -tulpn | grep 3001
+   ```
+
+### Problèmes de réseau ou firewall
+
+1. Vérifier que le port est ouvert sur le firewall:
+   ```bash
+   sudo ufw status
+   # Si nécessaire, ouvrir le port
+   sudo ufw allow 80/tcp
+   sudo ufw allow 443/tcp
+   ```
+
+## Maintenance
+
+### Mise à jour de l'application
 
 ```bash
+# Accéder au répertoire de l'application
 cd /chemin/vers/postgres-manager
+
+# Récupérer les dernières modifications
 git pull
+
+# Mettre à jour les dépendances
 npm ci
+
+# Reconstruire l'application
 npm run build
+
+# Redémarrer le service
 sudo systemctl restart postgres-manager
 ```
 
-## Surveillance et maintenance
-
-### Journaux du service
+### Sauvegarde de la base de données
 
 ```bash
-sudo journalctl -u postgres-manager -f
-```
+# Créer une sauvegarde
+sudo -u postgres pg_dump postgres_manager > backup_$(date +%Y%m%d).sql
 
-### Vérification de l'état du service
-
-```bash
-sudo systemctl status postgres-manager
+# Restaurer une sauvegarde
+sudo -u postgres psql postgres_manager < backup_20230101.sql
 ```
 
 ### Surveillance des performances
 
-L'API expose des métriques Prometheus à l'adresse `/metrics` qui peuvent être collectées par un serveur Prometheus.
+L'API expose des métriques Prometheus à l'adresse `/metrics` qui peuvent être collectées par un serveur Prometheus pour surveiller les performances et l'état du système.
