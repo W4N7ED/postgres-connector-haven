@@ -1,18 +1,17 @@
 
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import dotenv from 'dotenv';
-import authRoutes from './routes/authRoutes';
-import connectionRoutes from './routes/connectionRoutes';
-import errorHandler from './middlewares/errorHandler';
-import logger from './utils/logger';
-import ipRestriction from './middlewares/ipRestriction';
 
-// Charger les variables d'environnement
-dotenv.config();
+import { authRoutes } from './routes/authRoutes';
+import { connectionRoutes } from './routes/connectionRoutes';
+import { errorHandler } from './middlewares/errorHandler';
+import { ipRestriction } from './middlewares/ipRestriction';
+import { logger } from './utils/logger';
+import { setupMetrics } from './utils/metrics';
 
+// Initialisation de l'application Express
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -24,23 +23,38 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Middleware de restriction IP (appliqué à toutes les routes)
-app.use((req, res, next) => ipRestriction(req, res, next));
+// Correct way to apply middleware
+app.use(ipRestriction);
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/connections', connectionRoutes);
 
-// Route de base pour vérifier que le serveur fonctionne
-app.get('/', (req: Request, res: Response) => {
-  res.send('API PostgreSQL Manager - Serveur en ligne');
-});
+// Métriques Prometheus
+if (process.env.PROMETHEUS_ENABLED === 'true') {
+  setupMetrics(app);
+}
 
-// Middleware de gestion des erreurs
+// Middleware de gestion des erreurs (doit être après les routes)
 app.use(errorHandler);
 
-// Démarrer le serveur
-app.listen(PORT, () => {
+// Route par défaut
+app.get('/', (req, res) => {
+  res.json({ message: 'API PostgreSQL Manager', version: '1.0.0' });
+});
+
+// Démarrage du serveur
+const server = app.listen(PORT, () => {
   logger.info(`Serveur démarré sur le port ${PORT}`);
 });
 
-export default app;
+// Gestion propre de la fermeture
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM reçu, arrêt gracieux du serveur...');
+  server.close(() => {
+    logger.info('Serveur arrêté');
+    process.exit(0);
+  });
+});
+
+export { app };

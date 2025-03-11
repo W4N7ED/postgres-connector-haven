@@ -1,58 +1,51 @@
 
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 
 // Configuration de sécurité
 const SECURITY_CONFIG = {
-  // Ces valeurs devraient être chargées depuis des variables d'environnement dans un environnement de production
-  jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
-  jwtExpiresIn: '24h',
-  bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10),
+  bcryptSaltRounds: process.env.BCRYPT_SALT_ROUNDS ? parseInt(process.env.BCRYPT_SALT_ROUNDS) : 10,
+  jwtSecret: process.env.JWT_SECRET || 'default_secret_key_change_in_production',
+  jwtExpiresIn: process.env.JWT_EXPIRATION || '24h'
 };
 
-// Type pour représenter un utilisateur
-interface User {
-  id: string;
-  username: string;
-  password: string;
-  email: string;
-}
-
-// Utilisateurs fictifs pour la démonstration
-const users: User[] = [
-  {
-    id: '1',
-    username: 'admin',
-    password: '$2b$10$AkPXa0.7J.1jZ1MxzCH.4OL9BJ5SSAXZCulI8pUO4X0wPjjZRTTIa', // "password"
-    email: 'admin@example.com',
-  },
+// Simulation d'une base d'utilisateurs pour le développement
+// En production, cela serait remplacé par une vraie base de données
+let users = [
+  // L'utilisateur administrateur est créé au démarrage du serveur
 ];
 
-/**
- * Hasher un mot de passe
- */
-const hashPassword = async (password: string): Promise<string> => {
-  return bcrypt.hash(password, SECURITY_CONFIG.bcryptSaltRounds);
+// Initialisation de l'utilisateur admin à partir des variables d'environnement
+const initAdminUser = () => {
+  const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+  
+  // Vérifie si l'utilisateur admin existe déjà
+  if (!users.find(user => user.username === adminUsername)) {
+    const hashedPassword = bcrypt.hashSync(adminPassword, SECURITY_CONFIG.bcryptSaltRounds);
+    users.push({
+      id: uuidv4(),
+      username: adminUsername,
+      password: hashedPassword,
+      isAdmin: true
+    });
+    logger.info(`Utilisateur admin "${adminUsername}" initialisé`);
+  }
 };
 
-/**
- * Comparer un mot de passe avec un hash
- */
-const comparePassword = async (password: string, hashedPassword: string): Promise<boolean> => {
-  return bcrypt.compare(password, hashedPassword);
-};
+// Appel de l'initialisation au démarrage
+initAdminUser();
 
 /**
  * Générer un token JWT
  */
 const generateToken = (userId: string): string => {
-  // Cast jwtSecret to specific type required by jwt.sign
-  const secret = SECURITY_CONFIG.jwtSecret as jwt.Secret;
+  // Fix JWT signing by properly handling the secret
   return jwt.sign(
     { id: userId }, 
-    secret, 
+    SECURITY_CONFIG.jwtSecret,
     { expiresIn: SECURITY_CONFIG.jwtExpiresIn }
   );
 };
@@ -62,9 +55,8 @@ const generateToken = (userId: string): string => {
  */
 const verifyToken = (token: string): any => {
   try {
-    // Cast jwtSecret to specific type required by jwt.verify
-    const secret = SECURITY_CONFIG.jwtSecret as jwt.Secret;
-    return jwt.verify(token, secret);
+    // Fix JWT verification by properly handling the secret
+    return jwt.verify(token, SECURITY_CONFIG.jwtSecret);
   } catch (error) {
     logger.error('Erreur lors de la vérification du token JWT:', error);
     return null;
@@ -72,55 +64,34 @@ const verifyToken = (token: string): any => {
 };
 
 /**
- * Authentifier un utilisateur avec username/password
+ * Authentifier un utilisateur
  */
-const authenticate = async (username: string, password: string): Promise<{ user: Omit<User, 'password'>, token: string } | null> => {
-  const user = users.find((u) => u.username === username);
+const authenticateUser = async (username: string, password: string) => {
+  const user = users.find(u => u.username === username);
   
   if (!user) {
+    logger.warn(`Tentative de connexion avec un utilisateur inexistant: ${username}`);
     return null;
   }
   
-  const isPasswordValid = await comparePassword(password, user.password);
+  const passwordMatch = await bcrypt.compare(password, user.password);
   
-  if (!isPasswordValid) {
+  if (!passwordMatch) {
+    logger.warn(`Échec d'authentification pour l'utilisateur: ${username}`);
     return null;
   }
   
-  const token = generateToken(user.id);
-  
-  const { password: _, ...userWithoutPassword } = user;
-  
+  logger.info(`Utilisateur authentifié avec succès: ${username}`);
   return {
-    user: userWithoutPassword,
-    token,
+    id: user.id,
+    username: user.username,
+    isAdmin: user.isAdmin,
+    token: generateToken(user.id)
   };
 };
 
-/**
- * Création d'un nouvel utilisateur
- */
-const createUser = async (username: string, password: string, email: string): Promise<Omit<User, 'password'>> => {
-  const hashedPassword = await hashPassword(password);
-  
-  const newUser: User = {
-    id: uuidv4(),
-    username,
-    password: hashedPassword,
-    email,
-  };
-  
-  users.push(newUser);
-  
-  const { password: _, ...userWithoutPassword } = newUser;
-  
-  return userWithoutPassword;
-};
-
-export default {
-  authenticate,
-  createUser,
+export {
+  authenticateUser,
   verifyToken,
-  hashPassword,
-  comparePassword,
+  SECURITY_CONFIG
 };
