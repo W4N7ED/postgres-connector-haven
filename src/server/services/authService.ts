@@ -48,10 +48,11 @@ const comparePassword = async (password: string, hashedPassword: string): Promis
  * Générer un token JWT
  */
 const generateToken = (userId: string): string => {
+  // Cast jwtSecret to specific type required by jwt.sign
+  const secret = SECURITY_CONFIG.jwtSecret as jwt.Secret;
   return jwt.sign(
     { id: userId }, 
-    // Fix: Use the correct type for the JWT secret
-    SECURITY_CONFIG.jwtSecret, 
+    secret, 
     { expiresIn: SECURITY_CONFIG.jwtExpiresIn }
   );
 };
@@ -61,8 +62,9 @@ const generateToken = (userId: string): string => {
  */
 const verifyToken = (token: string): any => {
   try {
-    // Fix: Use the correct type for the JWT secret
-    return jwt.verify(token, SECURITY_CONFIG.jwtSecret);
+    // Cast jwtSecret to specific type required by jwt.verify
+    const secret = SECURITY_CONFIG.jwtSecret as jwt.Secret;
+    return jwt.verify(token, secret);
   } catch (error) {
     logger.error('Erreur lors de la vérification du token JWT:', error);
     return null;

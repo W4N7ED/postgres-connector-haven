@@ -16,16 +16,15 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware de restriction IP (doit être avant les autres middlewares)
-// Fix: Apply the middleware correctly to all routes, not as an application
-app.use(ipRestriction);
-
 // Middlewares de base
 app.use(helmet());
 app.use(compression());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Middleware de restriction IP (appliqué à toutes les routes)
+app.use((req, res, next) => ipRestriction(req, res, next));
 
 // Routes
 app.use('/api/auth', authRoutes);
