@@ -85,9 +85,9 @@ const authenticate = async (username: string, password: string): Promise<string 
   // Conversion du type secret et options pour JWT
   const jwtSecret = EXPRESS_CONFIG.jwtSecret as Secret;
   
-  // Fixed: Use the type StringValue for expiresIn
+  // Fixed: Use the correct type for expiresIn
   const options: SignOptions = { 
-    expiresIn: EXPRESS_CONFIG.jwtExpiration as jwt.SecretOrPrivateKey
+    expiresIn: EXPRESS_CONFIG.jwtExpiration
   };
   
   const token = jwt.sign(payload, jwtSecret, options);
