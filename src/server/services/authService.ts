@@ -82,10 +82,12 @@ const authenticate = async (username: string, password: string): Promise<string 
     role: user.role
   };
   
-  // Conversion explicite du type secret et options pour JWT
+  // Conversion du type secret et options pour JWT
   const jwtSecret = EXPRESS_CONFIG.jwtSecret as Secret;
+  
+  // Fixed: Use the type StringValue for expiresIn
   const options: SignOptions = { 
-    expiresIn: EXPRESS_CONFIG.jwtExpiration 
+    expiresIn: EXPRESS_CONFIG.jwtExpiration as jwt.SecretOrPrivateKey
   };
   
   const token = jwt.sign(payload, jwtSecret, options);
