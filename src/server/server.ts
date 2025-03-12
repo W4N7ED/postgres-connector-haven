@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -15,7 +14,6 @@ import logger from './utils/logger';
 import errorHandler from './middlewares/errorHandler';
 import authService from './services/authService';
 import connectionService from './services/connectionService';
-import ipRestriction from './middlewares/ipRestriction';
 
 // Créer l'application Express
 const app: Express = express();
@@ -29,16 +27,8 @@ app.use(express.json({ limit: EXPRESS_CONFIG.bodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: EXPRESS_CONFIG.bodyLimit }));
 app.use(compression());
 
-// Appliquer la restriction IP comme middleware
-app.use(ipRestriction);
-
 // Sécurité
 app.use(helmet());
-if (SECURITY_CONFIG.csrfProtection) {
-  // Dans une application réelle, nous mettrions en place une protection CSRF
-  // Exemple: app.use(csurf({ cookie: true }))
-  logger.info('CSRF protection enabled');
-}
 
 // Limitation de débit
 if (SECURITY_CONFIG.rateLimiting) {
