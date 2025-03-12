@@ -1,0 +1,202 @@
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String
+  role      Role      @default(USER)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  apiKeys   ApiKey[]
+  contacts  Contact[]
+  quotes    Quote[]
+  invoices  Invoice[]
+}
+
+enum Role {
+  ADMIN
+  USER
+  CLIENT
+}
+
+model Contact {
+  id         String    @id @default(uuid())
+  name       String
+  email      String
+  phone      String?
+  type       ContactType
+  address    String?
+  city       String?
+  postalCode String?
+  country    String?
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  quotes     Quote[]
+  invoices   Invoice[]
+}
+
+enum ContactType {
+  CLIENT
+  SUPPLIER
+  PARTNER
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  stock       Int
+  sku         String?
+  category    String?
+  images      String[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  quoteItems  QuoteItem[]
+  invoiceItems InvoiceItem[]
+}
+
+model Quote {
+  id        String      @id @default(uuid())
+  contactId String
+  contact   Contact     @relation(fields: [contactId], references: [id])
+  date      DateTime    @default(now())
+  dueDate   DateTime?
+  status    QuoteStatus @default(DRAFT)
+  total     Float
+  notes     String?
+  items     QuoteItem[]
+  invoice   Invoice?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
+
+model QuoteItem {
+  id          String  @id @default(uuid())
+  quoteId     String
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  description String
+  quantity    Int
+  unitPrice   Float
+  discount    Float?
+  tax         Float?
+  total       Float
+}
+
+model Invoice {
+  id        String        @id @default(uuid())
+  contactId String
+  contact   Contact       @relation(fields: [contactId], references: [id])
+  quoteId   String?       @unique
+  quote     Quote?        @relation(fields: [quoteId], references: [id])
+  date      DateTime      @default(now())
+  dueDate   DateTime
+  status    InvoiceStatus @default(DRAFT)
+  total     Float
+  notes     String?
+  items     InvoiceItem[]
+  payments  Payment[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELED
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  description String
+  quantity    Int
+  unitPrice   Float
+  discount    Float?
+  tax         Float?
+  total       Float
+}
+
+model Payment {
+  id        String      @id @default(uuid())
+  invoiceId String
+  invoice   Invoice     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount    Float
+  date      DateTime    @default(now())
+  method    PaymentMethod
+  reference String?
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CREDIT_CARD
+  PAYPAL
+  OTHER
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  description String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastUsed    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  isActive    Boolean   @default(true)
+}
+
+model Integration {
+  id          String           @id @default(uuid())
+  type        IntegrationType
+  service     String
+  credentials Json
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+enum IntegrationType {
+  STORAGE
+  CRM
+  PAYMENT_GATEWAY
+  EMAIL
+  OTHER
+}
