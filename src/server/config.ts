@@ -8,10 +8,12 @@ dotenv.config();
 // Configuration Express
 export const EXPRESS_CONFIG = {
   port: process.env.PORT || 3001,
+  host: process.env.HOST || '0.0.0.0',
   corsOrigin: process.env.CORS_ORIGIN || '*',
-  bodyLimit: '1mb',
+  bodyLimit: process.env.BODY_LIMIT || '1mb',
   jwtSecret: process.env.JWT_SECRET || 'default_jwt_secret_change_this_in_production',
   jwtExpiration: process.env.JWT_EXPIRATION || '24h',
+  ipWhitelist: process.env.IP_WHITELIST || '127.0.0.1,::1,localhost',
 };
 
 // Configuration par défaut du pool de connexions PostgreSQL
@@ -67,4 +69,20 @@ export const getPostgresConfig = (connectionString?: string) => {
       rejectUnauthorized: process.env.POSTGRES_REJECT_UNAUTHORIZED !== 'false'
     } : false,
   };
+};
+
+// Configuration de stockage pour les fichiers
+export const STORAGE_CONFIG = {
+  provider: process.env.CLOUD_STORAGE_PROVIDER || 'local',
+  baseUrl: process.env.CLOUD_STORAGE_BASE_URL || 'http://localhost:3001/uploads',
+  uploadPath: process.env.UPLOAD_PATH || './uploads'
+};
+
+// Configuration des passerelles de paiement
+export const PAYMENT_CONFIG = {
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY || '',
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || ''
+  }
 };

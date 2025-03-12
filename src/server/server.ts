@@ -15,6 +15,7 @@ import logger from './utils/logger';
 import errorHandler from './middlewares/errorHandler';
 import authService from './services/authService';
 import connectionService from './services/connectionService';
+import ipRestriction from './middlewares/ipRestriction';
 
 // Créer l'application Express
 const app: Express = express();
@@ -27,6 +28,9 @@ app.use(cors({
 app.use(express.json({ limit: EXPRESS_CONFIG.bodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: EXPRESS_CONFIG.bodyLimit }));
 app.use(compression());
+
+// Appliquer la restriction IP comme middleware
+app.use(ipRestriction);
 
 // Sécurité
 app.use(helmet());
@@ -113,8 +117,9 @@ app.use(errorHandler);
 
 // Démarrer le serveur
 const port = EXPRESS_CONFIG.port;
-const server = app.listen(port, () => {
-  logger.info(`Server running on port ${port}`);
+const host = EXPRESS_CONFIG.host;
+const server = app.listen(Number(port), host as string, () => {
+  logger.info(`Server running on ${host}:${port}`);
   
   // Initialisation
   authService.initAdminUser();
