@@ -4,40 +4,34 @@ import { EXPRESS_CONFIG } from '../config';
 import logger from '../utils/logger';
 
 /**
- * Middleware pour restreindre l'accès par IP
+ * Middleware pour restreindre l'accès à l'API à certaines adresses IP
  */
 const ipRestriction = (req: Request, res: Response, next: NextFunction) => {
-  try {
-    // Récupérer l'IP du client
-    const clientIp = req.ip || req.connection.remoteAddress || '';
-    
-    // Liste blanche d'IPs depuis la configuration
-    const whitelistStr = process.env.IP_WHITELIST || '127.0.0.1,::1,localhost';
-    const whitelist = whitelistStr.split(',').map(ip => ip.trim());
-    
-    // Vérifier si l'IP est dans la liste blanche
-    const isAllowed = whitelist.some(allowedIp => {
-      // Correspondance exacte ou localhost
-      return clientIp === allowedIp || 
-             allowedIp === 'localhost' && (clientIp === '127.0.0.1' || clientIp === '::1') ||
-             clientIp.includes(allowedIp); // Support partiel pour les sous-réseaux
-    });
-    
-    if (isAllowed) {
-      return next();
-    }
-    
-    // IP non autorisée
-    logger.warn(`Accès refusé pour l'IP: ${clientIp}`);
-    return res.status(403).json({
-      success: false,
-      error: 'Forbidden: IP address not allowed',
-      timestamp: new Date()
-    });
-  } catch (error) {
-    logger.error(`Erreur dans la vérification d'IP: ${(error as Error).message}`);
-    next();
+  // Si la liste blanche est vide ou contient *, autoriser toutes les IP
+  if (!EXPRESS_CONFIG.ipWhitelist || EXPRESS_CONFIG.ipWhitelist === '*') {
+    return next();
   }
+
+  // Récupérer l'IP du client
+  const clientIp = req.ip || req.connection.remoteAddress || '';
+  
+  // Convertir la liste blanche en tableau
+  const whitelistedIps = EXPRESS_CONFIG.ipWhitelist.split(',').map(ip => ip.trim());
+  
+  // Vérifier si l'IP est dans la liste blanche
+  if (whitelistedIps.includes(clientIp) || whitelistedIps.includes('*')) {
+    return next();
+  }
+  
+  // Journaliser la tentative d'accès non autorisée
+  logger.warn(`Accès refusé depuis l'IP ${clientIp}`);
+  
+  // Renvoyer une erreur 403 si l'IP n'est pas autorisée
+  return res.status(403).json({
+    success: false,
+    error: 'Accès refusé: votre adresse IP n\'est pas autorisée',
+    timestamp: new Date()
+  });
 };
 
 export default ipRestriction;

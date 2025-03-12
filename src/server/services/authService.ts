@@ -83,7 +83,7 @@ const authenticate = async (username: string, password: string): Promise<string 
   };
   
   // Conversion explicite du type secret pour JWT
-  const jwtSecret = EXPRESS_CONFIG.jwtSecret as jwt.Secret;
+  const jwtSecret: jwt.Secret = EXPRESS_CONFIG.jwtSecret;
   
   const token = jwt.sign(
     payload, 
@@ -100,7 +100,7 @@ const authenticate = async (username: string, password: string): Promise<string 
  */
 const verifyToken = (token: string): jwt.JwtPayload | null => {
   try {
-    const jwtSecret = EXPRESS_CONFIG.jwtSecret as jwt.Secret;
+    const jwtSecret: jwt.Secret = EXPRESS_CONFIG.jwtSecret;
     return jwt.verify(token, jwtSecret) as jwt.JwtPayload;
   } catch (error) {
     logger.error(`Token verification failed: ${(error as Error).message}`);
