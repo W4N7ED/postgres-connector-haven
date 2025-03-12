@@ -82,12 +82,16 @@ const authenticate = async (username: string, password: string): Promise<string 
     role: user.role
   };
   
-  // Correction pour résoudre le problème de type avec jwt.sign
-  const jwtSecret = EXPRESS_CONFIG.jwtSecret;
-  const options = { expiresIn: EXPRESS_CONFIG.jwtExpiration };
+  // Corriger le type pour les options de jwt.sign
+  // La propriété expiresIn doit être un nombre (secondes) ou une chaîne formatée comme '1d', '2h', etc.
+  const expiresIn = EXPRESS_CONFIG.jwtExpiration;
   
-  // Utilisation correcte de la signature jwt.sign
-  const token = jwt.sign(payload, jwtSecret, options);
+  // Utilisation correcte de la signature jwt.sign avec les types compatibles
+  const token = jwt.sign(
+    payload, 
+    EXPRESS_CONFIG.jwtSecret, 
+    { expiresIn }
+  );
 
   logger.info(`User ${username} authenticated successfully`);
   return token;
