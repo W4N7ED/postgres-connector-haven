@@ -1,6 +1,6 @@
 
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { Secret, JwtPayload, SignOptions } from 'jsonwebtoken';
 import { SECURITY_CONFIG, EXPRESS_CONFIG } from '../config';
 import logger from '../utils/logger';
 
@@ -82,16 +82,13 @@ const authenticate = async (username: string, password: string): Promise<string 
     role: user.role
   };
   
-  // Corriger le type pour les options de jwt.sign
-  // La propriété expiresIn doit être un nombre (secondes) ou une chaîne formatée comme '1d', '2h', etc.
-  const expiresIn = EXPRESS_CONFIG.jwtExpiration;
+  // Conversion explicite du type secret et options pour JWT
+  const jwtSecret = EXPRESS_CONFIG.jwtSecret as Secret;
+  const options: SignOptions = { 
+    expiresIn: EXPRESS_CONFIG.jwtExpiration 
+  };
   
-  // Utilisation correcte de la signature jwt.sign avec les types compatibles
-  const token = jwt.sign(
-    payload, 
-    EXPRESS_CONFIG.jwtSecret, 
-    { expiresIn }
-  );
+  const token = jwt.sign(payload, jwtSecret, options);
 
   logger.info(`User ${username} authenticated successfully`);
   return token;
@@ -100,10 +97,10 @@ const authenticate = async (username: string, password: string): Promise<string 
 /**
  * Vérifier un token JWT
  */
-const verifyToken = (token: string): jwt.JwtPayload | null => {
+const verifyToken = (token: string): JwtPayload | null => {
   try {
-    // Simplification de la vérification du token
-    return jwt.verify(token, EXPRESS_CONFIG.jwtSecret) as jwt.JwtPayload;
+    const jwtSecret = EXPRESS_CONFIG.jwtSecret as Secret;
+    return jwt.verify(token, jwtSecret) as JwtPayload;
   } catch (error) {
     logger.error(`Token verification failed: ${(error as Error).message}`);
     return null;

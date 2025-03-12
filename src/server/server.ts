@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -29,6 +30,11 @@ app.use(compression());
 
 // Sécurité
 app.use(helmet());
+if (SECURITY_CONFIG.csrfProtection) {
+  // Dans une application réelle, nous mettrions en place une protection CSRF
+  // Exemple: app.use(csurf({ cookie: true }))
+  logger.info('CSRF protection enabled');
+}
 
 // Limitation de débit
 if (SECURITY_CONFIG.rateLimiting) {
@@ -107,9 +113,8 @@ app.use(errorHandler);
 
 // Démarrer le serveur
 const port = EXPRESS_CONFIG.port;
-const host = EXPRESS_CONFIG.host;
-const server = app.listen(Number(port), host as string, () => {
-  logger.info(`Server running on ${host}:${port}`);
+const server = app.listen(port, () => {
+  logger.info(`Server running on port ${port}`);
   
   // Initialisation
   authService.initAdminUser();

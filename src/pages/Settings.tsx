@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import MainLayout from '@/layouts/MainLayout';
 import BlurCard from '@/components/ui/blur-card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
   const { toast } = useToast();
-
+  
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     toast({
@@ -177,6 +177,10 @@ const Settings = () => {
                 <li className="flex items-start">
                   <div className="min-w-[6px] h-2 mt-1.5 rounded-full bg-primary mr-2" />
                   <span>Pour des performances optimales, configurez un pool de connexions approprié.</span>
+                </li>
+                <li className="flex items-start">
+                  <div className="min-w-[6px] h-2 mt-1.5 rounded-full bg-primary mr-2" />
+                  <span>Définissez des délais d'attente raisonnables pour éviter que les requêtes bloquées n'affectent pas le système.</span>
                 </li>
               </ul>
             </BlurCard>
